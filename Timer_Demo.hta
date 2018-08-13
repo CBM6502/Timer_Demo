@@ -1,0 +1,162 @@
+<head>
+<HTA:APPLICATION
+	ID="wecker"
+	APPLICATIONNAME="countdown_with_progress_bar"
+	SCROLL="no"
+	SINGLEINSTANCE="yes"
+	WINDOWSTATE="Normal"
+	CAPTION="yes"
+	MAXIMIZEBUTTON="no"
+	MINIMIZEBUTTON="no"
+	SYSMENU="no"
+	BORDER="thin"
+	BORDERSTYLE="Normal"
+	CONTEXTMENU="no"
+	SELECTION="no"
+>
+</head>
+<title>Count down with Progressbar</title>
+<script language="VBScript">
+	Dim pbTimerID
+	Dim pbHTML
+	Dim pbWaitTime
+	Dim pbHeight
+	Dim pbWidth
+	Dim pbBorder
+	Dim pbUnloadedColor
+	Dim pbLoadedColor
+	Dim pbStartTime
+	
+	Dim pbSecsPassed
+	Dim haveSettings
+	Dim initial : initial = 0
+	Dim running : running = 1
+	Dim stopped : stopped = 2
+	Dim finished : finished = 4
+	Dim threshold : threshold = 8
+	Dim currentState : currentState = initial
+
+	Sub Window_OnLoad
+		haveSettings = 1
+		window.resizeTo 500,100
+		pbHeight = 10		' Progress bar height
+		pbWidth= 380		' Progress bar width
+		pbUnloadedColor="white"		' Color of unloaded area
+		pbLoadedColor="black"		' Color of loaded area
+		pbBorder="grey"		' Color of Progress bar border
+		pbLoadedWidth = 0 ' possible start value > 0
+		pbUnloadedWidth = pbWidth - pbLoadedWidth
+		pbHTML = pbHTML & "<table border=1 bordercolor=" & pbBorder & " cellpadding=0 cellspacing=0 width=" & pbWidth & "><tr>"
+		pbHTML = pbHTML & "<th width=" & pbLoadedWidth & " height=" & pbHeight & "align=left bgcolor="  & pbLoadedColor & "></th>"
+		pbHTML = pbHTML & "<th width=" & pbUnloadedWidth & " height=" & pbHeight & "align=left bgcolor="  & pbUnLoadedColor & "></th>"
+		
+		
+		pbHTML = pbHTML & "</tr></table>"
+		pbHTML = pbHTML & "<table id=""menuline"" border=1 cellpadding=0 cellspacing=0 width=" & pbWidth & "><tr>"
+		pbHTML = pbHTML & "<td align=""center"" width=""50%""><input id=""minutes"" onkeyup=""checkInput"" type=""text"" size=""8"" value=""00:00:00""></td>"
+		pbHTML = pbHTML & "<td align=""center"" width=""50%""><input type=""Button"" value=""Start"" name=""button1"" onClick=""StartTimer"" class=""button""></td>"
+		pbHTML = pbHTML & "</tr></table>"
+		timerProgressBar.InnerHTML = pbHTML
+		
+	End Sub
+
+	Sub ActionProgressBar
+		pbHTML = ""
+		pbSecsPassed = DateDiff("s",pbStartTime,Now)
+		pbMinsToGo =  Int((pbWaitTime - pbSecsPassed) / 60)
+		pbSecsToGo = Int((pbWaitTime - pbSecsPassed) - (pbMinsToGo * 60))
+		if pbSecsToGo < 10 then
+			pbSecsToGo = "0" & pbSecsToGo
+		end if
+		pbLoadedWidth = (pbSecsPassed / pbWaittime) * pbWidth
+		pbUnloadedWidth = pbWidth - pbLoadedWidth
+		pbHTML = pbHTML & "<table border=1 onClick=""Settings"" bordercolor=" & pbBorder & " cellpadding=0 cellspacing=0 width=" & pbWidth & "><tr>"
+		pbHTML = pbHTML & "<th width=" & pbLoadedWidth & " height=" & pbHeight & "align=left bgcolor="  & pbLoadedColor & "></th>"
+		pbHTML = pbHTML & "<th width=" & pbUnloadedWidth & " height=" & pbHeight & "align=left bgcolor="  & pbUnLoadedColor & "></th>"
+		pbHTML = pbHTML & "</tr></table><br>"
+		pbHTML = pbHTML & "<table id=""menuline"" border=1 cellpadding=0 cellspacing=0 width=" & pbWidth & "><tr>"
+		pbHTML = pbHTML & "</tr></table>"
+		document.title = pbMinsToGo & ":" & pbSecsToGo & " remaining"
+		timerProgressBar.InnerHTML = pbHTML
+		if DateDiff("s",pbStartTime,Now) >= pbWaitTime then
+			StopTimer
+			window.resizeTo 500,80
+			Beep
+		end if
+	End Sub
+
+	Sub StartTimer
+		If currentState = initial then
+			currentState = running
+			startTime = document.getElementById("minutes").value
+			times = split(startTime, ":")
+			pbWaitTime = (times(0)*60 + times(1))*60 + times(2)
+		End if
+		if pbWaittime = 0 then
+			currentState = initial
+			exit sub
+		End If
+		window.resizeTo 500,80
+		pbStartTime = Now
+		ActionProgressBar
+		pbTimerID = window.setInterval("ActionProgressBar", 200)
+	End Sub
+
+	Sub ContTimer
+		currentState = continued
+		window.resizeTo 500,150
+		pbHTML = ""
+		pbHTML = pbHTML & "<input type=""Button"" value=""Stop"" name=""button1"" onClick=""StopTimer"" class=""button"">"
+		pbHTML = pbHTML & "<input type=""Button"" value=""Quit"" name=""button2"" onClick=""CancelAction"" class=""button"">"
+		document.getElementById("menusline").innerHTML = pbHTML
+		pbStartTime = DateAdd("S", -pbSecsPassed, Now)
+		window.resizeTo 500,80
+		ActionProgressBar
+		pbTimerID = window.setInterval("ActionProgressBar", 200)
+	End Sub
+
+	Sub StopTimer
+		window.clearInterval(PBTimerID)
+		currentState = stopped
+		window.resizeTo 500,150
+		pbHTML = ""
+		pbHTML = pbHTML & "<input type=""Button"" value=""Restart"" name=""button1"" onClick=""StartTimer"" class=""button"">"
+		pbHTML = pbHTML & "<input type=""Button"" value=""Continue"" name=""button2"" onClick=""ContTimer"" class=""button"">"
+		document.getElementById("menusline").innerHTML = pbHTML
+	End Sub
+
+	Sub Beep
+		Set WshShell = CreateObject("WScript.Shell")
+		for i = 0 to 2
+			WshShell.Run "cmd /c ""@echo " & chr(7) & """", 0, 300 'True
+		next
+		MsgBox "Zeit ist abgelaufen"
+		Self.close
+	End Sub
+
+	Sub CancelAction
+		On Error Resume Next
+		Self.Close
+	End Sub
+
+	Sub Settings
+		window.resizeTo 500,150
+		pbHTML = ""
+		pbHTML = pbHTML & "<input type=""Button"" value=""Stop"" name=""button1"" onClick=""StopTimer"" class=""button"">"
+		pbHTML = pbHTML & "<input type=""Button"" value=""Quit"" name=""button2"" onClick=""CancelAction"" class=""button"">"
+		document.getElementById("menusline").innerHTML = pbHTML
+	End Sub
+
+	Sub checkInput
+		startTime = document.getElementById("minutes").value 'innerText
+	End Sub
+</script>
+<body>
+	<div align="center">
+		<span id="timerProgressBar">
+		</span>
+		<br>
+		<span id="menusline">
+		</span>
+	</div>
+</body>
